@@ -41,6 +41,7 @@ import {
 import { PlatformFilter } from "@/components/PlatformFilter";
 import { DateFilterModal } from "@/components/DateFilterModal";
 import { StatusFilter } from "@/components/StatusFilter";
+import { ExportDropdown } from "@/components/ExportDropdown";
 import {
     Select,
     SelectContent,
@@ -403,13 +404,16 @@ export default function RelatoriosPage() {
                         </Button>
                     )}
 
-                    <Button
-                        className="bg-[#5D2A1A] hover:bg-[#4A2214] text-white"
-                        onClick={() => exportarCSV(programas, "relatorio_programas", ["nome", "valor", "viagens"])}
-                    >
-                        <Download className="mr-2 h-4 w-4" />
-                        Exportar Dados
-                    </Button>
+                    <ExportDropdown
+                        filters={{
+                            dataInicio,
+                            dataFim,
+                            plataforma,
+                            status,
+                            programa: programaFilter,
+                            funcionario: funcionarioFilter,
+                        }}
+                    />
                 </div>
             </div>
 

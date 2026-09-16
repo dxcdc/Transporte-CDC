@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { DateFilterModal } from "@/components/DateFilterModal";
 import { PlatformFilter } from "@/components/PlatformFilter";
 import { StatusFilter } from "@/components/StatusFilter";
+import { ExportDropdown } from "@/components/ExportDropdown";
 
 // Tipos para os dados do banco
 interface DashboardResumo {
@@ -281,10 +282,16 @@ export default function DashboardPage() {
                             </span>
                         )}
 
-                        <Button className="bg-[#5D2A1A] text-white rounded-lg px-4 py-2 text-sm flex items-center gap-2 hover:bg-[#4A2214]">
-                            <Download className="h-4 w-4" />
-                            Exportar
-                        </Button>
+                        <ExportDropdown
+                            filters={{
+                                dataInicio,
+                                dataFim,
+                                plataforma,
+                                status,
+                                programa: programaGlobal,
+                                grupo: filtroGrupo,
+                            }}
+                        />
                     </div>
                 </div>
             </div>

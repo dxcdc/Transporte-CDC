@@ -146,7 +146,7 @@ export async function GET(req: NextRequest) {
             evolucaoMensal: evolucao,
             totalViagens,
             totalValor,
-            agrupamento: agrupamentoLabel, // 'dia' ou 'mes'
+            agrupamento: agrupamentoLabel,
         });
     } catch (error) {
         console.error("Erro ao buscar evolução mensal do funcionário:", error);
