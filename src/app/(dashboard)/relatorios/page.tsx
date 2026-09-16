@@ -1037,7 +1037,7 @@ export default function RelatoriosPage() {
                                                             </td>
                                                             <td className="py-2 px-3">{viagem.nomeCompleto}</td>
                                                             <td className="py-2 px-3">{viagem.servico || '-'}</td>
-                                                            <td className="py-2 px-3 max-w-[150px] truncate">
+                                                            <td className="py-2 px-3 max-w-[250px] whitespace-normal break-words">
                                                                 {viagem.enderecoDestino || '-'}
                                                             </td>
                                                             <td className="py-2 px-3 text-right font-medium">
