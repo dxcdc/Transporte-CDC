@@ -98,6 +98,88 @@ export class FileParser {
         return 0;
     }
 
+    public static normalizarNomePrograma(programa: string): string {
+        if (!programa) return '';
+        const p = String(programa).trim();
+        if (!p) return '';
+
+        // Apenas ATITUDE RECIFE, ATITUDE CABO, ATITUDE JABOATÃO, ATITUDE CARUARU levam o prefixo NÚCLEO
+        if (/^N[ÚU]CLEO\s+ATITUDE\s+RECIFE|^ATITUDE\s+RECIFE/i.test(p)) {
+            return 'NÚCLEO ATITUDE RECIFE';
+        }
+        if (/^N[ÚU]CLEO\s+ATITUDE\s+CABO|^ATITUDE\s+CABO/i.test(p)) {
+            return 'NÚCLEO ATITUDE CABO';
+        }
+        if (/^N[ÚU]CLEO\s+ATITUDE\s+JABOAT[AÃ]O|^ATITUDE\s+JABOAT[AÃ]O/i.test(p)) {
+            return 'NÚCLEO ATITUDE JABOATÃO';
+        }
+        if (/^N[ÚU]CLEO\s+ATITUDE\s+CARUARU|^ATITUDE\s+CARUARU/i.test(p)) {
+            return 'NÚCLEO ATITUDE CARUARU';
+        }
+
+        // PPCAAM (sem NÚCLEO, unifica PPCAAM e PPCAAM II)
+        if (/^N[ÚU]CLEO\s+PPCAAM|^PPCAAM/i.test(p)) {
+            return 'PPCAAM';
+        }
+
+        // PROVITA (sem NÚCLEO, unifica PROVITA e Provita II)
+        if (/^N[ÚU]CLEO\s+PROVITA|^PROVITA/i.test(p)) {
+            return 'PROVITA';
+        }
+
+        // BEM VIVER OLINDA (unifica BEM VIVER OLINDA e Bem Viver Olinda)
+        if (/^N[ÚU]CLEO\s+BEM\s+VIVER\s+OLINDA|^BEM\s+VIVER\s+OLINDA/i.test(p)) {
+            return 'BEM VIVER OLINDA';
+        }
+
+        // Mais Vida Recife
+        if (/^N[ÚU]CLEO\s+MAIS\s+VIDA\s+RECIFE|^MAIS\s+VIDA\s+RECIFE/i.test(p)) {
+            return 'Mais Vida Recife';
+        }
+
+        // Institucional
+        if (/^N[ÚU]CLEO\s+INSTITUCIONAL|^INSTITUCIONAL/i.test(p)) {
+            return 'Institucional';
+        }
+
+        // ATM
+        if (/^N[ÚU]CLEO\s+ATM|^ATM/i.test(p)) {
+            return 'ATM';
+        }
+
+        // Articulação
+        if (/^N[ÚU]CLEO\s+ARTICULA[CÇ][AÃ]O|^ARTICULA[CÇ][AÃ]O/i.test(p)) {
+            return 'Articulação';
+        }
+
+        // Geral
+        if (/^N[ÚU]CLEO\s+GERAL|^GERAL/i.test(p)) {
+            return 'Geral';
+        }
+
+        // CDC
+        if (/^N[ÚU]CLEO\s+CDC|^CDC/i.test(p)) {
+            return 'CDC';
+        }
+
+        // Cais Olinda
+        if (/^N[ÚU]CLEO\s+CAIS\s+OLINDA|^CAIS\s+OLINDA/i.test(p)) {
+            return 'Cais Olinda';
+        }
+
+        // Longevidade com Articulação
+        if (/^N[ÚU]CLEO\s+LONGEVIDADE|^LONGEVIDADE/i.test(p)) {
+            return 'Longevidade com Articulação';
+        }
+
+        // Se porventura receber "NÚCLEO ...", remove "NÚCLEO " dos demais
+        if (/^N[ÚU]CLEO\s+/i.test(p)) {
+            return p.replace(/^N[ÚU]CLEO\s+/i, '').trim();
+        }
+
+        return p;
+    }
+
     private static mapRowToCorrida(row: any): PlanilhaCorrida {
         const rawDataSolicitacao = row['Data Solicitação'] || row['data_solicitacao'] || row['Request Date'];
         const rawDataChegada = row['Data Chegada'] || row['data_chegada'] || row['Drop-off Date'];
@@ -145,6 +227,9 @@ export class FileParser {
             console.log(`🟢 Adicionado R$1 à viagem 99: ${idCorridaStr} (valor original: ${this.parseFloatExato(row['Valor Total'] || 0)})`);
         }
 
+        const rawPrograma = row['Programa'] || row['programa'] || row['Program'] || '';
+        const programaNormalizado = this.normalizarNomePrograma(rawPrograma);
+
         return {
             idCorridaPlataforma: idCorridaStr,
             plataforma: plataforma,
@@ -153,7 +238,7 @@ export class FileParser {
             dataChegada: this.parseDateValue(rawDataChegada),
             horaChegada: this.parseTimeValue(rawHoraChegada),
             servico: row['Serviço'] || row['servico'] || row['Service'] || '',
-            programa: row['Programa'] || row['programa'] || row['Program'] || '',
+            programa: programaNormalizado,
             grupo: row['Grupo'] || row['grupo'] || row['Group'] || '',
             nome: row['Nome'] || row['nome'] || row['First Name'] || '',
             sobrenome: row['Sobrenome'] || row['sobrenome'] || row['Last Name'] || '',
