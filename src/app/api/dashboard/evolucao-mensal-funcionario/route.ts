@@ -5,23 +5,28 @@ export async function GET(req: NextRequest) {
     try {
         const { searchParams } = new URL(req.url);
         const nomeCompleto = searchParams.get("nomeCompleto");
+        const email = searchParams.get("email");
         const dataInicio = searchParams.get("dataInicio");
         const dataFim = searchParams.get("dataFim");
         const plataforma = searchParams.get("plataforma");
         const status = searchParams.get("status");
         const programa = searchParams.get("programa");
 
-        if (!nomeCompleto) {
+        if (!nomeCompleto && !email) {
             return NextResponse.json(
-                { error: "Nome do funcionário é obrigatório" },
+                { error: "Nome ou email do funcionário é obrigatório" },
                 { status: 400 }
             );
         }
 
         // Construir filtro
-        const where: any = {
-            nomeCompleto: nomeCompleto,
-        };
+        const where: any = {};
+
+        if (email && email.trim() !== "") {
+            where.email = { equals: email.trim(), mode: 'insensitive' };
+        } else if (nomeCompleto) {
+            where.nomeCompleto = { equals: nomeCompleto, mode: 'insensitive' };
+        }
 
         let dataInicioDate: Date | null = null;
         let dataFimDate: Date | null = null;

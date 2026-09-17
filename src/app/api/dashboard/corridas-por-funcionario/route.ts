@@ -15,19 +15,21 @@ export async function GET(request: Request) {
     try {
         const { searchParams } = new URL(request.url);
         const nomeCompleto = searchParams.get('nomeCompleto');
+        const email = searchParams.get('email');
         const dataInicioStr = searchParams.get('dataInicio');
         const dataFimStr = searchParams.get('dataFim');
         const programa = searchParams.get('programa');
         const plataformaParam = searchParams.get('plataforma');
 
-        if (!nomeCompleto) {
+        if (!nomeCompleto && !email) {
             return NextResponse.json(
-                { error: 'Nome do funcionário é obrigatório' },
+                { error: 'Nome ou email do funcionário é obrigatório' },
                 { status: 400 }
             );
         }
 
-        const nomeNormalizado = normalizarTexto(nomeCompleto);
+        const emailClean = email ? email.trim().toLowerCase() : '';
+        const nomeNormalizado = normalizarTexto(nomeCompleto || '');
 
         const where: any = {};
 
@@ -66,17 +68,22 @@ export async function GET(request: Request) {
                 enderecoPartida: true,
                 enderecoDestino: true,
                 servico: true,
+                grupo: true,
                 detalhamentoDespesa: true,
                 valorTotal: true,
                 distanciaMetros: true,
                 plataforma: true,
                 nomeCompleto: true,
+                email: true,
             },
         });
 
-        const corridas = todasCorridas.filter(c =>
-            normalizarTexto(c.nomeCompleto || '') === nomeNormalizado
-        );
+        const corridas = todasCorridas.filter(c => {
+            if (emailClean && c.email && c.email.trim().toLowerCase() === emailClean) {
+                return true;
+            }
+            return normalizarTexto(c.nomeCompleto || '') === nomeNormalizado;
+        });
 
         const MILHAS_PARA_KM = 1.60934;
 
@@ -101,6 +108,7 @@ export async function GET(request: Request) {
                 enderecoPartida: c.enderecoPartida || '',
                 enderecoDestino: c.enderecoDestino || '',
                 servico: c.servico || '',
+                grupo: c.grupo || '',
                 detalhamentoDespesa: c.detalhamentoDespesa || '',
                 valorTotal: c.valorTotal ? Number(c.valorTotal) : 0,
                 distanciaKm: distanciaKm,

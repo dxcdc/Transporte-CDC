@@ -80,20 +80,38 @@ export async function GET(request: Request) {
 
         console.log(`📊 Encontradas ${corridas.length} corridas`);
 
-        const funcionariosMap = new Map();
+        interface FuncionarioGroup {
+            id: string;
+            nome: string;
+            sobrenome: string;
+            nomeCompleto: string;
+            email: string;
+            titulo: string;
+            grupo: string;
+            programa: string;
+            servico: string;
+            cidade: string;
+            pais: string;
+            totalViagens: number;
+            valorTotal: number;
+            nomesFrequencia: Map<string, number>;
+        }
+
+        const funcionariosMap = new Map<string, FuncionarioGroup>();
 
         for (const c of corridas) {
             const nomeOriginal = c.nomeCompleto;
             if (!nomeOriginal) continue;
 
-            const chaveNormalizada = normalizarTexto(nomeOriginal);
+            const emailClean = c.email ? c.email.trim().toLowerCase() : '';
+            const chaveNormalizada = emailClean ? `EMAIL:${emailClean}` : `NOME:${normalizarTexto(nomeOriginal)}`;
 
             if (!funcionariosMap.has(chaveNormalizada)) {
                 funcionariosMap.set(chaveNormalizada, {
                     id: chaveNormalizada,
                     nome: c.nome || '',
                     sobrenome: c.sobrenome || '',
-                    nomeCompleto: nomeOriginal, // Mantém a versão original
+                    nomeCompleto: nomeOriginal,
                     email: c.email || '',
                     titulo: 'Funcionário',
                     grupo: c.grupo || '',
@@ -103,33 +121,41 @@ export async function GET(request: Request) {
                     pais: c.pais || '',
                     totalViagens: 0,
                     valorTotal: 0,
-                    // Armazenar diferentes variações do nome para referência
-                    variacoes: new Set([nomeOriginal]),
+                    nomesFrequencia: new Map(),
                 });
-            } else {
-                // Adicionar variação do nome se for diferente
-                const func = funcionariosMap.get(chaveNormalizada);
-                if (!func.variacoes.has(nomeOriginal)) {
-                    func.variacoes.add(nomeOriginal);
-                }
-                // Se o nome original for mais "legível" (não está em CAIXA ALTA), atualiza
-                if (nomeOriginal !== nomeOriginal.toUpperCase() && func.nomeCompleto === func.nomeCompleto.toUpperCase()) {
-                    func.nomeCompleto = nomeOriginal;
-                    func.nome = c.nome || '';
-                    func.sobrenome = c.sobrenome || '';
-                }
             }
 
-            const func = funcionariosMap.get(chaveNormalizada);
+            const func = funcionariosMap.get(chaveNormalizada)!;
             func.totalViagens++;
             if (c.valorTotal) {
                 func.valorTotal += Number(c.valorTotal);
             }
+
+            if (!func.email && c.email) {
+                func.email = c.email;
+            }
+
+            func.nomesFrequencia.set(nomeOriginal, (func.nomesFrequencia.get(nomeOriginal) || 0) + 1);
         }
 
-        // Remover a propriedade temporária 'variacoes' antes de retornar
+        // Selecionar o nomeCompleto mais frequente e legível para cada funcionário
         const funcionarios = Array.from(funcionariosMap.values())
-            .map(({ variacoes, ...func }) => func)
+            .map(({ nomesFrequencia, ...func }) => {
+                let melhorNome = func.nomeCompleto;
+                let maiorFreq = -1;
+
+                for (const [nome, freq] of nomesFrequencia.entries()) {
+                    if (freq > maiorFreq) {
+                        maiorFreq = freq;
+                        melhorNome = nome;
+                    }
+                }
+
+                return {
+                    ...func,
+                    nomeCompleto: melhorNome,
+                };
+            })
             .sort((a, b) => b.valorTotal - a.valorTotal);
 
         console.log(`📊 Total de funcionários unificados: ${funcionarios.length}`);

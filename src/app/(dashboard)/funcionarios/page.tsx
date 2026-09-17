@@ -71,6 +71,7 @@ interface CorridaDetalhe {
     enderecoPartida: string;
     enderecoDestino: string;
     servico: string;
+    grupo: string;
     detalhamentoDespesa: string;
     valorTotal: number;
     distanciaKm: number;
@@ -189,7 +190,8 @@ export default function UsuariosPage() {
 
         try {
             const params = new URLSearchParams();
-            params.append('nomeCompleto', funcionario.nomeCompleto);
+            if (funcionario.nomeCompleto) params.append('nomeCompleto', funcionario.nomeCompleto);
+            if (funcionario.email) params.append('email', funcionario.email);
             if (dataInicio) params.append('dataInicio', dataInicio);
             if (dataFim) params.append('dataFim', dataFim);
             if (programaSelecionado && programaSelecionado !== 'todos') params.append('programa', programaSelecionado);
@@ -360,7 +362,6 @@ export default function UsuariosPage() {
                                 <tr className="border-b">
                                     <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">Nome</th>
                                     <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">Programa</th>
-                                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">Grupo</th>
                                     <th className="text-right py-3 px-4 text-sm font-medium text-gray-600">Viagens</th>
                                     <th className="text-right py-3 px-4 text-sm font-medium text-gray-600">Valor Total</th>
                                     <th className="text-center py-3 px-4 text-sm font-medium text-gray-600">Ações</th>
@@ -376,7 +377,6 @@ export default function UsuariosPage() {
                                             </div>
                                         </td>
                                         <td className="py-3 px-4 text-sm">{func.programa}</td>
-                                        <td className="py-3 px-4 text-sm">{func.grupo || "-"}</td>
                                         <td className="py-3 px-4 text-right font-medium">{func.totalViagens}</td>
                                         <td className="py-3 px-4 text-right font-medium">
                                             R$ {func.valorTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
@@ -396,7 +396,7 @@ export default function UsuariosPage() {
                                 ))}
                                 {funcionariosFiltrados.length === 0 && (
                                     <tr>
-                                        <td colSpan={6} className="text-center py-8 text-gray-500">
+                                        <td colSpan={5} className="text-center py-8 text-gray-500">
                                             Nenhum funcionário encontrado
                                         </td>
                                     </tr>
@@ -445,6 +445,7 @@ export default function UsuariosPage() {
                                             <TableRow>
                                                 <TableHead className="w-[100px]">Data</TableHead>
                                                 <TableHead className="w-[80px]">Hora</TableHead>
+                                                <TableHead className="w-[120px]">Grupo</TableHead>
                                                 <TableHead className="min-w-[200px]">Endereço de Partida</TableHead>
                                                 <TableHead className="min-w-[200px]">Endereço de Destino</TableHead>
                                                 <TableHead className="w-[100px]">KM</TableHead>
@@ -465,6 +466,9 @@ export default function UsuariosPage() {
                                                         {corrida.horaSolicitacao && corrida.horaChegada
                                                             ? `${corrida.horaSolicitacao} → ${corrida.horaChegada}`
                                                             : corrida.horaSolicitacao || corrida.horaChegada || "-"}
+                                                    </TableCell>
+                                                    <TableCell className="align-top font-medium">
+                                                        {corrida.grupo || "-"}
                                                     </TableCell>
                                                     <TableCell className="min-w-[200px] align-top whitespace-normal break-words">
                                                         {corrida.enderecoPartida || "-"}
