@@ -1,13 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-
-function normalizarTexto(texto: string): string {
-    return texto
-        .toUpperCase()
-        .trim()
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '');
-}
+import { FileParser } from '@/lib/import/file-parser';
 
 export async function GET(request: Request) {
     try {
@@ -15,6 +8,7 @@ export async function GET(request: Request) {
         const dataInicioStr = searchParams.get('dataInicio');
         const dataFimStr = searchParams.get('dataFim');
         const plataforma = searchParams.get('plataforma');
+        const status = searchParams.get('status');
 
         const where: any = {
             programa: { not: null },
@@ -22,45 +16,44 @@ export async function GET(request: Request) {
 
         if (dataInicioStr) {
             const dataInicio = new Date(dataInicioStr);
-            dataInicio.setHours(0, 0, 0, 0);
-            where.dataSolicitacao = { gte: dataInicio };
+            if (!isNaN(dataInicio.getTime())) {
+                dataInicio.setHours(0, 0, 0, 0);
+                where.dataSolicitacao = { gte: dataInicio };
+            }
         }
 
         if (dataFimStr) {
             const dataFim = new Date(dataFimStr);
-            dataFim.setHours(23, 59, 59, 999);
-            where.dataSolicitacao = { ...where.dataSolicitacao, lte: dataFim };
+            if (!isNaN(dataFim.getTime())) {
+                dataFim.setHours(23, 59, 59, 999);
+                where.dataSolicitacao = { ...where.dataSolicitacao, lte: dataFim };
+            }
         }
 
         if (plataforma && plataforma !== 'todos') {
             where.plataforma = plataforma;
         }
 
-        const programas = await prisma.corrida.groupBy({
-            by: ['programa'],
+        if (status && status !== 'todos') {
+            where.status = status;
+        }
+
+        const corridas = await prisma.corrida.findMany({
             where,
+            select: { programa: true },
         });
 
-        const programasMap = new Map();
+        const programasSet = new Set<string>();
 
-        programas.forEach(p => {
-            if (!p.programa) return;
-
-            const original = p.programa;
-            const normalizado = normalizarTexto(original);
-
-            if (!programasMap.has(normalizado)) {
-                programasMap.set(normalizado, original);
-            } else {
-                const existente = programasMap.get(normalizado);
-                if (original === original.toUpperCase() && existente !== existente.toUpperCase()) {
-                } else if (original !== original.toUpperCase()) {
-                    programasMap.set(normalizado, original);
-                }
+        corridas.forEach(c => {
+            if (!c.programa) return;
+            const norm = FileParser.normalizarNomePrograma(c.programa);
+            if (norm) {
+                programasSet.add(norm);
             }
         });
 
-        const nomes = Array.from(programasMap.values()).sort();
+        const nomes = Array.from(programasSet).sort();
 
         return NextResponse.json(nomes);
     } catch (error) {

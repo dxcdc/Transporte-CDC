@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-
+import { FileParser } from '@/lib/import/file-parser';
 
 export async function GET(request: Request) {
     try {
@@ -8,7 +8,7 @@ export async function GET(request: Request) {
         const dataInicioStr = searchParams.get('dataInicio');
         const dataFimStr = searchParams.get('dataFim');
         const plataforma = searchParams.get('plataforma');
-        const status = searchParams.get('status')
+        const status = searchParams.get('status');
 
         const where: any = {
             programa: { not: null },
@@ -24,28 +24,51 @@ export async function GET(request: Request) {
 
         if (dataInicioStr) {
             const dataInicio = new Date(dataInicioStr);
-            dataInicio.setHours(0, 0, 0, 0);
-            where.dataSolicitacao = { gte: dataInicio };
+            if (!isNaN(dataInicio.getTime())) {
+                dataInicio.setHours(0, 0, 0, 0);
+                where.dataSolicitacao = { gte: dataInicio };
+            }
         }
 
         if (dataFimStr) {
             const dataFim = new Date(dataFimStr);
-            dataFim.setHours(23, 59, 59, 999);
-            where.dataSolicitacao = { ...where.dataSolicitacao, lte: dataFim };
+            if (!isNaN(dataFim.getTime())) {
+                dataFim.setHours(23, 59, 59, 999);
+                where.dataSolicitacao = { ...where.dataSolicitacao, lte: dataFim };
+            }
         }
 
-        const programas = await prisma.corrida.groupBy({
-            by: ['programa'],
+        const corridas = await prisma.corrida.findMany({
             where,
-            _sum: { valorTotal: true },
-            _count: true,
+            select: {
+                programa: true,
+                valorTotal: true,
+            },
         });
 
-        const dados = programas.map(p => ({
-            nome: p.programa,
-            valor: p._sum.valorTotal ? Number(p._sum.valorTotal) : 0,
-            viagens: p._count,
-        }));
+        const programasMap = new Map<string, { nome: string; valor: number; viagens: number }>();
+
+        corridas.forEach((c) => {
+            if (!c.programa) return;
+            const nomeNorm = FileParser.normalizarNomePrograma(c.programa);
+            if (!nomeNorm) return;
+
+            if (!programasMap.has(nomeNorm)) {
+                programasMap.set(nomeNorm, {
+                    nome: nomeNorm,
+                    valor: 0,
+                    viagens: 0,
+                });
+            }
+
+            const item = programasMap.get(nomeNorm)!;
+            item.viagens++;
+            if (c.valorTotal) {
+                item.valor += Number(c.valorTotal);
+            }
+        });
+
+        const dados = Array.from(programasMap.values()).sort((a, b) => b.valor - a.valor);
 
         return NextResponse.json(dados);
     } catch (error) {
